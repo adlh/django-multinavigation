@@ -1,4 +1,4 @@
 django-multinavigation
 ======================
 
-Goal: A mostly DRY way of define and create navigations, the standard menu and breadcrumbs.
+Goal: A mostly DRY way to define and create navigations (standard menu and breadcrumbs).
