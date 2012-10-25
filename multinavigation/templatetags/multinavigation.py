@@ -8,7 +8,7 @@
 from django.conf import settings
 from django import template
 from collections import namedtuple
-from django.core.urlresolvers import reverse, resolve
+from django.core.urlresolvers import reverse, resolve, Resolver404
 import logging
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,10 @@ def breadcrumbs(request, nodes):
     if not hasattr(request, 'path'):
         return []
     # first get the name of the matching urlpattern 
-    urlname = resolve(request.path).url_name
+    try:
+        urlname = resolve(request.path).url_name
+    except Resolver404:
+        return []
     b_nodes = []
     # if any breadcrumbs are found the first one is the active one
     find_breadcrumbs(urlname, nodes, b_nodes, True)
