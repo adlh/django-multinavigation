@@ -1,0 +1,8 @@
+<li><a href="/">Home</a> <span class="divider">/</span></li>
+{% for n in nodes %}
+    {% if n.active %}
+    <li class="active">{{ n.label }}</li>
+    {% else %}
+    <li><a href="{{ n.url }}">{{ n.label }}</a> <span class="divider">/</span></li>
+    {% endif %}
+{% endfor %}

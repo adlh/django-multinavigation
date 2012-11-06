@@ -1,0 +1,8 @@
+<li class="dropdown {% if node.active %}active{% endif %}">
+    <a class="dropdown-toggle" data-toggle="dropdown" 
+        href="#">{{ node.label }}<b class="caret"></b></a>
+    <ul class="dropdown-menu">
+        {% for child in node.children %}{% with child as item %}
+        {% include "multinavigation/_tabnav_item.html" %}
+        {% endwith %}{% endfor %}
+    </ul>

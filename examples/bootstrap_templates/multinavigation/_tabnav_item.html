@@ -1,0 +1,10 @@
+        <li class="{% if item.active %}active{% endif %}"><a href="{{ item.url }}">{{ item.label }}</a></li>
+        {% if item.children %}
+        <li>
+            <ul>
+                {% for citem in item.children %}
+                <li class="{% if citem.active %}active{% endif %}"><a href="{{ citem.url }}">{{ citem.label }}</a></li>
+                {% endfor %}
+            </ul>
+        </li>
+        {% endif %}

@@ -1,0 +1,21 @@
+{% comment %}
+Available fields:
+=================
+nodes - a list of multinavigation.conf.Node
+each node has:
+- url_name (string), 
+- label (string), 
+- parent (string) and 
+- context - a dictionary where extra context can be defined to be used in templates.
+            e.g. {{ node.context.css_class }}
+
+=================
+{% endcomment %}
+{% for node in nodes %}
+    {% if node.children %}
+        {% include "multinavigation/_tabnav_item_dropdown.html" %}
+    {% else %}
+        {% with node as item %}{% include "multinavigation/_tabnav_item.html" %}{% endwith %}
+    {% endif %}
+{% endfor %}
+
