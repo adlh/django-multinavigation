@@ -15,23 +15,54 @@ logger = logging.getLogger(__name__)
 register = template.Library()
 
 """ A tree node represents each item on a tree-navigation """
-TNode = namedtuple('Node', 'url label active children context')
+TNode = namedtuple('TNode', 'url label active children context')
+def build_tnode(n, children, url, active):
+    """ Takes a multinavigation.conf.Node namedtuple and builds a tree node. """
+    return TNode(url, n.label, active, children, n.context)
+
 
 @register.inclusion_tag('multinavigation/tabnavigation.html')
 def tabnavigation(request, nodes):
-    # build the tree for the navigation
+    """ Returns nodes for the complete navigation tree. """
     parents = [n for n in nodes if not n.parent]
     tree_nodes = add_nodes(parents, nodes, request)
     return {'nodes': tree_nodes,}
 
+
+@register.inclusion_tag('multinavigation/tabnavigation.html')
+def flatnavigation(request, nodes):
+    """ Returns nodes only for the root level. This can be used in combination
+    with the subnavigation. """
+    tree_nodes = []
+    for n in nodes:
+        url = reverse(n.url_name)
+        if not n.parent:
+            tree_nodes.append(build_tnode(n, [], url, is_active(request, url)))
+    return {'nodes': tree_nodes,}
+
+
+@register.inclusion_tag('multinavigation/tabnavigation.html')
+def subnavigation(request, nodes):
+    """ Returns only a submenu (tree), if any, for the current parent. """
+    urlname = get_urlname(request)
+    if not urlname:
+        return []
+    subnodes = []
+    children = []
+    for n in nodes:
+        if n.url_name == urlname:
+            # this is the active node, get top-most parent first
+            parent = get_root(n, nodes)
+            children = [c for c in nodes if c.parent == parent.url_name]
+    tree_nodes = add_nodes(children, nodes, request)
+    return {'nodes': tree_nodes,}
+             
+
 @register.inclusion_tag('multinavigation/breadcrumbs.html')
 def breadcrumbs(request, nodes):
-    if not hasattr(request, 'path'):
-        return []
-    # first get the name of the matching urlpattern 
-    try:
-        urlname = resolve(request.path).url_name
-    except Resolver404:
+    """ Returns the bredcrumbs nodes """
+    urlname = get_urlname(request)
+    if not urlname:
         return []
     b_nodes = []
     # if any breadcrumbs are found the first one is the active one
@@ -40,10 +71,35 @@ def breadcrumbs(request, nodes):
     b_nodes.reverse()
     return {'nodes': b_nodes,}
 
+
+def get_root(n, nodes):
+    """ returns the top-most parent in nodes for the given node """
+    if not n.parent:
+        return n
+    for node in nodes:
+        if n.parent == node.url_name:
+            if not node.parent:
+                return node
+            else: 
+                return get_root(node, nodes)
+
+
+def get_urlname(request):
+    """ Get the name of the matching urlpattern """
+    if not hasattr(request, 'path'):
+        return ""
+    # first get the name of the matching urlpattern 
+    try:
+        return resolve(request.path).url_name
+    except Resolver404:
+        return ""
+
+
 def find_breadcrumbs(url_name, nodes, b_nodes, active):
     for n in nodes:
         if n.url_name == url_name:
-            b_nodes.append(TNode(reverse(n.url_name), n.label, active, [], n.context))
+            url = reverse(n.url_name)
+            b_nodes.append(build_tnode(n, [], url, active))
             if n.parent:
                 find_breadcrumbs(n.parent, nodes, b_nodes, False)
 
@@ -54,14 +110,18 @@ def add_nodes(parents, nodes, request):
         children = [c for c in nodes if c.parent == n.url_name]
         tn_children = add_nodes(children, nodes, request)
         url = reverse(n.url_name)
-        tn_list.append(TNode(url, n.label, is_active(request, url), tn_children, n.context))
+        active = is_active(request, url)
+        tn_list.append(build_tnode(n, tn_children, url, active))
     return tn_list
 
+
 def is_active(request, link_url):
-    """ check if the corresponding parts of the given link and the request.path match (active) """
+    """ check if the corresponding parts of the given link and the request.path
+    match (active) """
     if not hasattr(request, 'path'):
         return False
-    # get the last or relevant "level" of this link and compare it with corresponding part on request-url
+    # get the last or relevant "level" of this link and compare it with
+    # corresponding part on request-url
     link_parts = link_url.strip('/').split('/')
     request_parts = (request.path).strip('/').split('/')
     if len(request_parts) < len(link_parts):
