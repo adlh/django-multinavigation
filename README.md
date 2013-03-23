@@ -1,7 +1,8 @@
 django-multinavigation
 ======================
 
-Goal: A simple, flexible and DRY way to define and create navigations (tabnavigation and breadcrumbs).
+Goal: A simple, flexible and DRY way to define and create navigations
+(tabnavigation and breadcrumbs).
 
 INSTALLATION:
 
@@ -34,6 +35,19 @@ def multinavigation(request):
         }
 ```
 
+A Node is defined like this:
+
+```python
+Node = namedtuple('Node', 'url_name label parent context')
+""" Represents a node or item in a navigation
+url_name    -- (string) The name of a named-urlpattern
+label       -- (string) The label to be used in the item
+parent      -- (string) the url_name of its parent or ''
+context     -- (dict, optional) Contains extra context for the items, to be
+                used on the templates (if needed) for customization purposes.
+"""
+```
+
 4) Add your context_processor in settings.py, e.g.
 ```python
 # settings.py
@@ -43,8 +57,18 @@ TEMPLATE_CONTEXT_PROCESSORS += (
 )
 ```
 
-5) Define your template(s)
-...
+5) Define your template(s), you can also just use or customize the
+example-templates provided.
 
-6) Ready to use the templatetag
-...
+6) Ready to use the templatetags. Some examples could be:
+```html
+<div class="navbar">
+    <ul class="nav nav-pills">
+        {% tabnavigation request MULTINAV_NODES %}
+    </ul>
+</div>
+
+<ul class="breadcrumb">
+    {% breadcrumbs request MULTINAV_NODES %}
+</ul>
+```
