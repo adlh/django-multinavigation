@@ -29,7 +29,7 @@ def tabnavigation(request, nodes):
     return {'nodes': tree_nodes,}
 
 
-@register.inclusion_tag('multinavigation/tabnavigation.html')
+@register.inclusion_tag('multinavigation/flatnavigation.html')
 def flatnavigation(request, nodes):
     """ Returns nodes only for the root level. This can be used in combination
     with the subnavigation. """
@@ -41,7 +41,7 @@ def flatnavigation(request, nodes):
     return {'nodes': tree_nodes,}
 
 
-@register.inclusion_tag('multinavigation/tabnavigation.html')
+@register.inclusion_tag('multinavigation/subnavigation.html')
 def subnavigation(request, nodes):
     """ Returns only a submenu (tree), if any, for the current parent. """
     urlname = get_urlname(request)
