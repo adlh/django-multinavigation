@@ -21,7 +21,8 @@ def build_tnode(n, children, url, active):
     return TNode(url, n.label, active, children, n.context)
 
 
-@register.inclusion_tag('multinavigation/tabnavigation.html')
+@register.inclusion_tag('multinavigation/tabnavigation.html',
+        takes_context=True)
 def tabnavigation(request, nodes):
     """ Returns nodes for the complete navigation tree. """
     parents = [n for n in nodes if not n.parent]
@@ -29,7 +30,8 @@ def tabnavigation(request, nodes):
     return {'nodes': tree_nodes,}
 
 
-@register.inclusion_tag('multinavigation/flatnavigation.html')
+@register.inclusion_tag('multinavigation/flatnavigation.html',
+        takes_context=True)
 def flatnavigation(request, nodes):
     """ Returns nodes only for the root level. This can be used in combination
     with the subnavigation. """
@@ -41,7 +43,8 @@ def flatnavigation(request, nodes):
     return {'nodes': tree_nodes,}
 
 
-@register.inclusion_tag('multinavigation/subnavigation.html')
+@register.inclusion_tag('multinavigation/subnavigation.html',
+        takes_context=True)
 def subnavigation(request, nodes):
     """ Returns only a submenu (tree), if any, for the current parent. """
     urlname = get_urlname(request)
@@ -56,9 +59,9 @@ def subnavigation(request, nodes):
             children = [c for c in nodes if c.parent == parent.url_name]
     tree_nodes = add_nodes(children, nodes, request)
     return {'nodes': tree_nodes,}
-             
 
-@register.inclusion_tag('multinavigation/breadcrumbs.html')
+
+@register.inclusion_tag('multinavigation/breadcrumbs.html', takes_context=True)
 def breadcrumbs(request, nodes):
     """ Returns the bredcrumbs nodes """
     urlname = get_urlname(request)
@@ -80,7 +83,7 @@ def get_root(n, nodes):
         if n.parent == node.url_name:
             if not node.parent:
                 return node
-            else: 
+            else:
                 return get_root(node, nodes)
 
 
@@ -88,7 +91,7 @@ def get_urlname(request):
     """ Get the name of the matching urlpattern """
     if not hasattr(request, 'path'):
         return ""
-    # first get the name of the matching urlpattern 
+    # first get the name of the matching urlpattern
     try:
         return resolve(request.path).url_name
     except Resolver404:
@@ -125,6 +128,6 @@ def is_active(request, link_url):
     link_parts = link_url.strip('/').split('/')
     request_parts = (request.path).strip('/').split('/')
     if len(request_parts) < len(link_parts):
-        return False 
-    return link_parts[-1] == request_parts[len(link_parts)-1] 
+        return False
+    return link_parts[-1] == request_parts[len(link_parts)-1]
 
