@@ -7,6 +7,7 @@
 
 from django.conf import settings
 from django import template
+from django.template import RequestContext
 from collections import namedtuple
 from django.core.urlresolvers import reverse, resolve, Resolver404
 import logging
@@ -23,16 +24,17 @@ def build_tnode(n, children, url, active):
 
 @register.inclusion_tag('multinavigation/tabnavigation.html',
         takes_context=True)
-def tabnavigation(request, nodes):
+def tabnavigation(context, request, nodes):
     """ Returns nodes for the complete navigation tree. """
     parents = [n for n in nodes if not n.parent]
     tree_nodes = add_nodes(parents, nodes, request)
-    return {'nodes': tree_nodes,}
+    context['nodes'] = tree_nodes
+    return RequestContext(request, {'nodes': tree_nodes,})
 
 
 @register.inclusion_tag('multinavigation/flatnavigation.html',
         takes_context=True)
-def flatnavigation(request, nodes):
+def flatnavigation(context, request, nodes):
     """ Returns nodes only for the root level. This can be used in combination
     with the subnavigation. """
     tree_nodes = []
@@ -40,12 +42,12 @@ def flatnavigation(request, nodes):
         url = reverse(n.url_name)
         if not n.parent:
             tree_nodes.append(build_tnode(n, [], url, is_active(request, url)))
-    return {'nodes': tree_nodes,}
+    return RequestContext(request, {'nodes': tree_nodes,})
 
 
 @register.inclusion_tag('multinavigation/subnavigation.html',
         takes_context=True)
-def subnavigation(request, nodes):
+def subnavigation(context, request, nodes):
     """ Returns only a submenu (tree), if any, for the current parent. """
     urlname = get_urlname(request)
     if not urlname:
@@ -58,11 +60,11 @@ def subnavigation(request, nodes):
             parent = get_root(n, nodes)
             children = [c for c in nodes if c.parent == parent.url_name]
     tree_nodes = add_nodes(children, nodes, request)
-    return {'nodes': tree_nodes,}
+    return RequestContext(request, {'nodes': tree_nodes,})
 
 
 @register.inclusion_tag('multinavigation/breadcrumbs.html', takes_context=True)
-def breadcrumbs(request, nodes):
+def breadcrumbs(context, request, nodes):
     """ Returns the bredcrumbs nodes """
     urlname = get_urlname(request)
     if not urlname:
@@ -72,7 +74,7 @@ def breadcrumbs(request, nodes):
     find_breadcrumbs(urlname, nodes, b_nodes, True)
     # now reverse to get parent > child > grandchild > ...
     b_nodes.reverse()
-    return {'nodes': b_nodes,}
+    return RequestContext(request, {'nodes': b_nodes,})
 
 
 def get_root(n, nodes):
