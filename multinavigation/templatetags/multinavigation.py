@@ -159,7 +159,7 @@ def is_active(request, link_url):
     """ check if the corresponding parts of the given link and the request.path
     match (active).
     For example, if requeest.path is '/bla/bli/blu/' and link_url is '/bla/',
-    '/bla/bli' or /bla/bli/blu/' is_active should return True
+    '/bla/bli' or /bla/bli/blu/', then is_active should return True
     """
     if not hasattr(request, 'path'):
         return False
