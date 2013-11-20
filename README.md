@@ -35,6 +35,42 @@ def multinavigation(request):
         }
 ```
 
+If there are any url's which need named parameters, then you should pass them
+with the node's context under the keyword 'url_kwargs', so that the url can be
+reversed correctly. 
+
+NOTE: the given value of the parameter in the node, will ALWAYS be overriden
+in the case, the request-url defines the parameter itself. Or in other words,
+if the request.path is /bla/my-slug-2/2020/ ... then slug will be 'my-slug-2'
+and year will be 2020, not matter, which defaults were given in url_kwargs. 
+But it is important to define this parameters on the node's context, or else
+the resolve of the url will fail.
+
+An example would be:
+
+```python
+# urls.py
+...
+url(r'^bla/(?P<slug>[-\w]+)/(?P<year>[0-9]{4})/$', 'bla', name='bla_params')
+...
+
+# context_processors.py
+from multinavigation.conf import Node
+
+def multinavigation(request):
+    bla_dict = {'url_kwargs':'year:{}, slug:{}'.format(2012, 'my-slug')}
+    return {
+        'MULTINAV_NODES': [
+            Node('home', _('Home'), '', {}),
+            Node('company', _('Company'), '', {}),
+            Node('contact', _('Contact'), '', {}),
+            Node('bla_params', _('Bla'), '', bla_dict),
+            ]
+        }
+```
+
+
+
 A Node is defined like this:
 
 ```python
