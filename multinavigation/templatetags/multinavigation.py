@@ -146,10 +146,13 @@ def reverse_url(n, url_match):
         kwargs_dict = get_url_kwargs(url_kwargs)
     # if there is a required kwarg defined in the node-context but it's empty
     # and it's in the url_match present, update dict
-    for k in kwargs_dict.keys():
-        v = url_match.kwargs.get(k, None)
-        if v:
-            kwargs_dict[k] = v
+    args_dict = {}
+    if url_match:
+        args_dict = url_match.args
+        for k in kwargs_dict.keys():
+            v = url_match.kwargs.get(k, None)
+            if v:
+                kwargs_dict[k] = v
     url = reverse(n.url_name, args=url_match.args, kwargs=kwargs_dict)
     return url
 
