@@ -53,7 +53,7 @@ def flatnavigation(context, request, nodes):
 def subnavigation(context, request, nodes):
     """ Returns only a submenu (tree), if any, for the current parent. """
     url_match = get_url_match(request)
-    urlname = url_match.url_name
+    urlname = url_match.url_name if url_match else ''
     if not urlname:
         return []
     subnodes = []
@@ -71,7 +71,7 @@ def subnavigation(context, request, nodes):
 def breadcrumbs(context, request, nodes):
     """ Returns the bredcrumbs nodes """
     url_match = get_url_match(request)
-    urlname = url_match.url_name
+    urlname = url_match.url_name if url_match else ''
     if not urlname:
         return []
     b_nodes = []
@@ -146,14 +146,12 @@ def reverse_url(n, url_match):
         kwargs_dict = get_url_kwargs(url_kwargs)
     # if there is a required kwarg defined in the node-context but it's empty
     # and it's in the url_match present, update dict
-    args_dict = {}
     if url_match:
-        args_dict = url_match.args
         for k in kwargs_dict.keys():
             v = url_match.kwargs.get(k, None)
             if v:
                 kwargs_dict[k] = v
-    url = reverse(n.url_name, args=url_match.args, kwargs=kwargs_dict)
+    url = reverse(n.url_name, kwargs=kwargs_dict)
     return url
 
 
