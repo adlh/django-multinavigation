@@ -10,6 +10,7 @@ from django import template
 from django.template import RequestContext
 from collections import namedtuple
 from django.core.urlresolvers import reverse, resolve, Resolver404
+from pprint import pformat
 import logging
 
 logger = logging.getLogger(__name__)
@@ -39,10 +40,33 @@ def flatnavigation(context, request, nodes):
     with the subnavigation. """
     tree_nodes = []
     for n in nodes:
-        url = reverse(n.url_name)
+        url = reverse_url(n)
         if not n.parent:
             tree_nodes.append(build_tnode(n, [], url, is_active(request, url)))
     return RequestContext(request, {'nodes': tree_nodes,})
+
+
+def get_url_kwargs(url_kwargs_str):
+    # url_kwargs should be a str in form 'kwd_1:val_1, kwd_2:val_2, ...'...
+    url_kwargs_str = str(url_kwargs_str) # just make sure it's a string
+    url_kwargs = {}
+    if url_kwargs_str:
+        for pair in url_kwargs_str.split(','):
+            k, v = pair.strip().split(':')
+            k = k.strip()
+            v = v.strip()
+        if k and v:
+            url_kwargs[k] = v
+    return url_kwargs
+
+
+def reverse_url(n):
+    url_kwargs = n.context.get('url_kwargs', '')
+    kwargs_dict = {}
+    if url_kwargs:
+        kwargs_dict = get_url_kwargs(url_kwargs)
+    url = reverse(n.url_name, kwargs=kwargs_dict)
+    return url
 
 
 @register.inclusion_tag('multinavigation/subnavigation.html',
@@ -103,7 +127,7 @@ def get_urlname(request):
 def find_breadcrumbs(url_name, nodes, b_nodes, active):
     for n in nodes:
         if n.url_name == url_name:
-            url = reverse(n.url_name)
+            url = reverse_url(n)
             b_nodes.append(build_tnode(n, [], url, active))
             if n.parent:
                 find_breadcrumbs(n.parent, nodes, b_nodes, False)
@@ -114,7 +138,7 @@ def add_nodes(parents, nodes, request):
     for n in parents:
         children = [c for c in nodes if c.parent == n.url_name]
         tn_children = add_nodes(children, nodes, request)
-        url = reverse(n.url_name)
+        url = reverse_url(n)
         active = is_active(request, url)
         tn_list.append(build_tnode(n, tn_children, url, active))
     return tn_list
