@@ -15,6 +15,7 @@ INSTALLED_APPS = (
 )
 ```
 
+
 2) Be sure all urlpatterns to be used on the navigation are named-patterns, 
 because the name will be used as a key for the nodes.
 
@@ -85,13 +86,25 @@ context     -- (dict, optional) Contains extra context for the items, to be
 ```
 
 4) Add your context_processor in settings.py, e.g.
-```python
-# settings.py
 
-TEMPLATE_CONTEXT_PROCESSORS += (
+NOTE: Be sure you have `django.core.context_processors.request` included in
+your `TEMPLATE_CONTEXT_PROCESSORS` as well. This will add a `request` context
+varialble in your templates, which you must pass as the first parameter to the
+multinavigation template tags.
+
+Add the following lines to add the processors to the defaults in settings.py:
+
+```python
+j settings.py
+
+import django.conf.global_settings as DEFAULT_SETTINGS
+
+TEMPLATE_CONTEXT_PROCESSORS = DEFAULT_SETTINGS.TEMPLATE_CONTEXT_PROCESSORS + (
+    'django.core.context_processors.request',
     'mysite.context_processors.multinavigation',
 )
 ```
+
 
 5) Define your template(s), you can also just use or customize the
 example-templates provided.
