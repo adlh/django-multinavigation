@@ -134,23 +134,45 @@ def get_url_kwargs(url_kwargs_str):
             k, v = pair.strip().split(':')
             k = k.strip()
             v = v.strip()
-        if k and v:
+        # Empty values are allowed here to provide a way to set them through
+        # the current URL
+        if k:
             url_kwargs[k] = v
     return url_kwargs
 
 
 def reverse_url(n, url_match):
+    # Any needed url parameters can be defined through these ways:
+    #
+    # 1. Through the url_kwargs passed with the node's context.
+    #    Example: {'url_kwargs': 'slug:some_category'}
+    #
+    # 2. Through the url path of the request. This is the case, when the
+    #    url should be built depending on the current url. Example:
+    #    We've got an url archive/<year>/ and subsets for news, articles, etc.
+    #    Like this: archive/<year>/news, archive/<year>/articles ... And we
+    #    want <year> to be set depending the current url.
+    #    For this to work, the keyword should be present BUT empty on the
+    #    node's context.
+    #    Example: {'url_kwargs': 'year:'}
+
+    # Get any passed kwargs from the node's context
     url_kwargs = n.context.get('url_kwargs', '')
     kwargs_dict = {}
     if url_kwargs:
         kwargs_dict = get_url_kwargs(url_kwargs)
-    # if there is a required kwarg defined in the node-context but it's empty
-    # and it's in the url_match present, update dict
-    if url_match:
-        for k in kwargs_dict.keys():
-            v = url_match.kwargs.get(k, None)
-            if v:
-                kwargs_dict[k] = v
+
+    # Now check for any empty arguments and try to get them from the current
+    # URL's path
+    for k in kwargs_dict.keys():
+        if not kwargs_dict[k]:
+            if url_match:
+                v = url_match.kwargs.get(k, None)
+                if v:
+                    kwargs_dict[k] = v
+                else:
+                    # if couldn't get the argument, delete it
+                    del kwargs_dict[k]
     url = reverse(n.url_name, kwargs=kwargs_dict)
     return url
 
