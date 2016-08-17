@@ -102,7 +102,7 @@ multinavigation template tags.
 Add the following lines to add the processors to the defaults in settings.py:
 
 ```python
-j settings.py
+# settings.py
 
 import django.conf.global_settings as DEFAULT_SETTINGS
 
