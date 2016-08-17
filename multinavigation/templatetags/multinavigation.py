@@ -118,7 +118,33 @@ def find_breadcrumbs(url_name, nodes, b_nodes, active, url_match):
 def add_nodes(parents, nodes, request, url_match):
     tn_list = []
     for n in parents:
-        children = [c for c in nodes if c.parent == n.url_name]
+        # children nodes can specify a parent by url_name and additionally
+        # with kwargs like this: 'the_url_name|kwd_1:val1,kwd_2:val2'
+        children = []
+        for c in nodes:
+            if c.parent:
+                chunks = c.parent.split('|')
+                parent_url_name = chunks[0]
+                kwargs = {}
+                if len(chunks) > 1:
+                    for pair in chunks[1].split(','):
+                        k, v = pair.strip().split(':')
+                        k = k.strip()
+                        v = v.strip()
+                        if k and v:
+                            kwargs[k] = v
+                if n.url_name == parent_url_name:
+                    if not kwargs:
+                        children.append(c)
+                    else:
+                        # check that all kwargs specified on the child match
+                        # the ones on the parent node before adding.
+                        parent_kwargs = get_url_kwargs(n.context.get('url_kwargs', ''))
+                        # Use sets to easily compare both dicts
+                        s1 = set(parent_kwargs.items())
+                        s2 = set(kwargs.items())
+                        if s2.issubset(s1):
+                            children.append(c)
         tn_children = add_nodes(children, nodes, request, url_match)
         url = reverse_url(n, url_match)
         active = is_active(request, url)
@@ -135,10 +161,10 @@ def get_url_kwargs(url_kwargs_str):
             k, v = pair.strip().split(':')
             k = k.strip()
             v = v.strip()
-        # Empty values are allowed here to provide a way to set them through
-        # the current URL
-        if k:
-            url_kwargs[k] = v
+            # Empty values are allowed here to provide a way to set them through
+            # the current URL
+            if k:
+                url_kwargs[k] = v
     return url_kwargs
 
 

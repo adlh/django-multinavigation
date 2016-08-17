@@ -28,7 +28,9 @@ Node = namedtuple('Node', 'url_name label parent context')
 """ Represents a node or item in a navigation
 url_name    -- (string) The name of a named-urlpattern
 label       -- (string) The label to be used in the item
-parent      -- (string) the url_name of its parent or ''
+parent      -- (string) the url_name of its parent or ''. Extra kwargs to be
+                met on the parent may be defined through: 
+                'url_name|kw1:val1,kw2:val2'
 context     -- (dict, optional) Contains extra context for the items, to be
                 used on the templates (if needed) for customization purposes.
 """
@@ -91,6 +93,30 @@ pass them through.
         Node('archive_pics', _('Pictures'), 'archive', {'url_kwargs': 'year:'}),
     #...
     ```
+
+If using kwargs on nodes with children, then the children can specify their parent url
+with url parameters which must be matched on the parent by the format:
+`parent_url|kwarg1:value,kwarg2:value`
+
+Example:
+
+```python
+
+def multinavigation(request):
+#...
+    Node('animals', _('Dogs'), '', {'url_kwargs': 'slug:dogs'}),
+    Node('big_dogs', _('Big dogs'), 'animals|slug:dogs', 
+        {'url_kwargs': 'slug:big_dogs'}),
+    Node('small_dogs', _('Small dogs'), 'animals|slug:dogs', 
+        {'url_kwargs': 'slug:small_dogs'}),
+    Node('animals', _('Cats'), '', {'url_kwargs': 'slug:cats'}),
+    Node('wild_cats', _('Wild cats'), 'animals|slug:cats', 
+        {'url_kwargs': 'slug:wild_cats'}),
+    Node('house_cats', _('House cats'), 'animals|slug:cats', 
+        {'url_kwargs': 'slug:house_cats'}),
+#...
+```
+
 
 4) Add your context_processor in settings.py, e.g.
 
