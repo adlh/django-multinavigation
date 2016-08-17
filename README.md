@@ -64,12 +64,13 @@ pass them through.
     ```
 
 2. Or through the request's path, to be able to build URLs dinamically
-   depending on which path is set. Example: Let's say we have an archive with
-   news and pics as subnav items. Now depending if we're on */archive/2014/* we
-   want the subnav items set to */archive/2014/news/* and */archive/2014/pics/*
-   respectively.
+   depending on which path is set. 
 
     Example:
+
+    Let's say we have an archive with news and pics as subnav items. Now
+    depending if we're on `/archive/2014/` we want the subnav items set to
+    `/archive/2014/news/` and `/archive/2014/pics/` respectively.
 
     ```python
     # urls.py
