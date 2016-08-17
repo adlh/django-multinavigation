@@ -10,6 +10,7 @@ from django import template
 from django.template import RequestContext
 from collections import namedtuple
 from django.core.urlresolvers import reverse, resolve, Resolver404
+from django.core.urlresolvers import NoReverseMatch
 from pprint import pformat
 import logging
 
@@ -173,7 +174,10 @@ def reverse_url(n, url_match):
                 else:
                     # if couldn't get the argument, delete it
                     del kwargs_dict[k]
-    url = reverse(n.url_name, kwargs=kwargs_dict)
+    try:
+        url = reverse(n.url_name, kwargs=kwargs_dict)
+    except NoReverseMatch:
+        url = '#'
     return url
 
 
