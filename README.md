@@ -6,7 +6,7 @@ Goal: A simple, flexible and DRY way to define and create navigations
 
 INSTALLATION:
 
-1) add app to settings.py:
+1) Add app to settings.py:
 ```python
 # setting.py
 INSTALLED_APPS = (
@@ -19,7 +19,21 @@ INSTALLED_APPS = (
 2) Be sure all urlpatterns to be used on the navigation are named-patterns, 
 because the name will be used as a key for the nodes.
 
-3) define your nodes in a context processor, e.g.:
+3) Define your nodes in a context processor.
+
+A Node is defined like this:
+
+```python
+Node = namedtuple('Node', 'url_name label parent context')
+""" Represents a node or item in a navigation
+url_name    -- (string) The name of a named-urlpattern
+label       -- (string) The label to be used in the item
+parent      -- (string) the url_name of its parent or ''
+context     -- (dict, optional) Contains extra context for the items, to be
+                used on the templates (if needed) for customization purposes.
+"""
+```
+Example:
 
 ```python
 # context_processors.py
@@ -41,53 +55,41 @@ pass them through.
 
 1. Through the node's context under the keyword 'url_kwargs'. 
 
-For example:
+    For example:
 
-```python
-...
-    Node('category', _('Category'), '', {'url_kwargs': 'slug:some_category'}),
-...
-```
+    ```python
+    ...
+        Node('category', _('Category'), '', {'url_kwargs': 'slug:some_category'}),
+    ...
+    ```
+
 2. Or through the request's path, to be able to build URLs dinamically
-   depending on which path is set. Example: We have an archive, with news and
-   pics as subnav items. Now depending if we're on */archive/2014/* we want the
-   subnav items set to */archive/2014/news/* and */archive/2014/pics/*
+   depending on which path is set. Example: Let's say we have an archive with
+   news and pics as subnav items. Now depending if we're on */archive/2014/* we
+   want the subnav items set to */archive/2014/news/* and */archive/2014/pics/*
    respectively.
 
-Example:
+    Example:
 
-```python
-# urls.py
-...
-    url(r'^archive/(?P<year>[0-9]{4})/$', 'archive', name='archive_year'),
-    url(r'^archive/(?P<year>[0-9]{4})/news$', 'archive_news', name='archive_news'),
-    url(r'^archive/(?P<year>[0-9]{4})/pics$', 'archive_pics', name='archive_pics'),
-...
+    ```python
+    # urls.py
+    ...
+        url(r'^archive/(?P<year>[0-9]{4})/$', 'archive', name='archive_year'),
+        url(r'^archive/(?P<year>[0-9]{4})/news$', 'archive_news', name='archive_news'),
+        url(r'^archive/(?P<year>[0-9]{4})/pics$', 'archive_pics', name='archive_pics'),
+    ...
 
-# context_processors.py
-from multinavigation.conf import Node
+    # context_processors.py
+    from multinavigation.conf import Node
 
-# We define the nodes in the subnav like this:
+    # We define the nodes in the subnav like this:
 
-def multinavigation(request):
-#...
-    Node('archive_news', _('News'), 'archive', {'url_kwargs': 'year:'}),
-    Node('archive_pics', _('Pictures'), 'archive', {'url_kwargs': 'year:'}),
-#...
-```
-
-A Node is defined like this:
-
-```python
-Node = namedtuple('Node', 'url_name label parent context')
-""" Represents a node or item in a navigation
-url_name    -- (string) The name of a named-urlpattern
-label       -- (string) The label to be used in the item
-parent      -- (string) the url_name of its parent or ''
-context     -- (dict, optional) Contains extra context for the items, to be
-                used on the templates (if needed) for customization purposes.
-"""
-```
+    def multinavigation(request):
+    #...
+        Node('archive_news', _('News'), 'archive', {'url_kwargs': 'year:'}),
+        Node('archive_pics', _('Pictures'), 'archive', {'url_kwargs': 'year:'}),
+    #...
+    ```
 
 4) Add your context_processor in settings.py, e.g.
 
