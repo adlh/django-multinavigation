@@ -43,8 +43,8 @@ def flatnavigation(context, request, nodes):
     tree_nodes = []
     url_match = get_url_match(request)
     for n in nodes:
-        url = reverse_url(n, url_match)
         if not n.parent:
+            url = reverse_url(n, url_match)
             tree_nodes.append(build_tnode(n, [], url, is_active(request, url)))
     return RequestContext(request, {'nodes': tree_nodes, 'context': context})
 
@@ -54,16 +54,17 @@ def flatnavigation(context, request, nodes):
 def subnavigation(context, request, nodes):
     """ Returns only a submenu (tree), if any, for the current parent. """
     url_match = get_url_match(request)
-    urlname = url_match.url_name if url_match else ''
-    if not urlname:
+    url_name = url_match.url_name if url_match else ''
+    kwargs = url_match.kwargs
+    if not url_name:
         return []
     subnodes = []
     children = []
     for n in nodes:
-        if n.url_name == urlname:
+        if match_node(url_name, kwargs, n, url_match):
             # this is the active node, get top-most parent first
-            parent = get_root(n, nodes)
-            children = [c for c in nodes if c.parent == parent.url_name]
+            parent = get_root(n, nodes, url_match)
+            children = get_children(parent, nodes, url_match)
     tree_nodes = add_nodes(children, nodes, request, url_match)
     return RequestContext(request, {'nodes': tree_nodes, 'context': context})
 
@@ -72,27 +73,35 @@ def subnavigation(context, request, nodes):
 def breadcrumbs(context, request, nodes):
     """ Returns the bredcrumbs nodes """
     url_match = get_url_match(request)
-    urlname = url_match.url_name if url_match else ''
-    if not urlname:
+    if not url_match or not url_match.url_name:
         return []
     b_nodes = []
     # if any breadcrumbs are found the first one is the active one
-    find_breadcrumbs(urlname, nodes, b_nodes, True, url_match)
+    find_breadcrumbs(None, nodes, b_nodes, True, url_match)
     # now reverse to get parent > child > grandchild > ...
     b_nodes.reverse()
     return RequestContext(request, {'nodes': b_nodes, 'context': context })
 
 
-def get_root(n, nodes):
+def get_root(n, nodes, url_match):
     """ returns the top-most parent in nodes for the given node """
-    if not n.parent:
+    parent = find_parent(n, nodes, url_match)
+    if not parent:
         return n
+    if not parent.parent:
+        return parent
+    else:
+        return get_root(parent, nodes, url_match)
+
+def find_parent(child, nodes, url_match):
+    if not child.parent:
+        return None
+    url_name, kwargs = parse_url_name_args(child.parent)
     for node in nodes:
-        if n.parent == node.url_name:
-            if not node.parent:
-                return node
-            else:
-                return get_root(node, nodes)
+        if match_node(url_name, kwargs, node, url_match):
+            return node
+    return None
+
 
 
 def get_url_match(request):
@@ -106,13 +115,84 @@ def get_url_match(request):
         return None
 
 
-def find_breadcrumbs(url_name, nodes, b_nodes, active, url_match):
-    for n in nodes:
-        if n.url_name == url_name:
-            url = reverse_url(n, url_match)
-            b_nodes.append(build_tnode(n, [], url, active))
-            if n.parent:
-                find_breadcrumbs(n.parent, nodes, b_nodes, False, url_match)
+def match_node(url_name, kwargs, node, url_match):
+    """ Returns true if a node matches url_name and kwargs (if any given) """
+    if node.url_name != url_name:
+        return False
+    if not kwargs:
+        return True
+    nkwargs = get_url_kwargs(node.context.get('url_kwargs', ''), url_match)
+
+    return match_subset_kwargs(kwargs, nkwargs)
+
+
+def find_breadcrumbs(url_name_args, nodes, b_nodes, active, url_match):
+    """
+    Find a node matching url_name and any kwargs specified by the url_name_args
+    or if none given from the url_match (our starting point).
+    If a node is found add it to b_nodes and if the node has a parent repeat
+    the procedure.
+
+    """
+    kwargs = {}
+    url_name = ''
+    if not url_name_args:
+        kwargs = url_match.kwargs
+        url_name = url_match.url_name
+    else:
+        url_name, kwargs = parse_url_name_args(url_name_args)
+
+    found = [n for n in nodes if match_node(url_name, kwargs, n, url_match)]
+    if found:
+        found = found[0]
+    if not found:
+        return
+
+    url = reverse_url(found, url_match)
+    b_nodes.append(build_tnode(found, [], url, active))
+
+    if found.parent:
+        find_breadcrumbs(found.parent, nodes, b_nodes, False, url_match)
+
+
+def match_subset_kwargs(subset_kwargs, kwargs):
+    """ Check that all key-value pairs in subset_kwargs match on kwargs """
+    # Use sets to easily compare both dicts
+    s1 = set(kwargs.items())
+    s2 = set(subset_kwargs.items())
+    return s2.issubset(s1)
+
+
+def parse_url_name_args(string):
+    """
+    Parse and return url_name and kwargs as a tuple from the node's
+    url_name parameter (which can be just the url_name or additionally define
+    some kwargs)
+
+    Example: node['url_name'] = 'url_name|kwarg1:value,kwarg2:value'
+
+    """
+    chunks = string.split('|')
+    url_name = chunks[0]
+    kwargs = {}
+    if len(chunks) > 1:
+        for pair in chunks[1].split(','):
+            k, v = pair.strip().split(':')
+            k = k.strip()
+            v = v.strip()
+            if k and v:
+                kwargs[k] = v
+    return (url_name, kwargs)
+
+
+def get_children(parent, nodes, url_match):
+    children = []
+    for c in nodes:
+        if c.parent:
+            url_name, kwargs = parse_url_name_args(c.parent)
+            if match_node(url_name, kwargs, parent, url_match):
+                children.append(c)
+    return children
 
 
 def add_nodes(parents, nodes, request, url_match):
@@ -120,31 +200,7 @@ def add_nodes(parents, nodes, request, url_match):
     for n in parents:
         # children nodes can specify a parent by url_name and additionally
         # with kwargs like this: 'the_url_name|kwd_1:val1,kwd_2:val2'
-        children = []
-        for c in nodes:
-            if c.parent:
-                chunks = c.parent.split('|')
-                parent_url_name = chunks[0]
-                kwargs = {}
-                if len(chunks) > 1:
-                    for pair in chunks[1].split(','):
-                        k, v = pair.strip().split(':')
-                        k = k.strip()
-                        v = v.strip()
-                        if k and v:
-                            kwargs[k] = v
-                if n.url_name == parent_url_name:
-                    if not kwargs:
-                        children.append(c)
-                    else:
-                        # check that all kwargs specified on the child match
-                        # the ones on the parent node before adding.
-                        parent_kwargs = get_url_kwargs(n.context.get('url_kwargs', ''))
-                        # Use sets to easily compare both dicts
-                        s1 = set(parent_kwargs.items())
-                        s2 = set(kwargs.items())
-                        if s2.issubset(s1):
-                            children.append(c)
+        children = get_children(n, nodes, url_match)
         tn_children = add_nodes(children, nodes, request, url_match)
         url = reverse_url(n, url_match)
         active = is_active(request, url)
@@ -152,54 +208,53 @@ def add_nodes(parents, nodes, request, url_match):
     return tn_list
 
 
-def get_url_kwargs(url_kwargs_str):
-    # url_kwargs should be a str in form 'kwd_1:val_1, kwd_2:val_2, ...'...
+def get_url_kwargs(url_kwargs_str, url_match):
+    """
+    Any needed url parameters can be defined through these ways:
+
+    1. Through the url_kwargs passed with the node's context.
+
+       Example: {'url_kwargs': 'slug:some_category'}
+
+    2. Through the url path of the request. This is the case, when the
+       url should be built depending on the current url. Example:
+       We've got an url archive/<year>/ and subsets for news, articles, etc.
+       Like this: archive/<year>/news, archive/<year>/articles ... And we
+       want <year> to be set depending the current url.
+       For this to work, the keyword should be present BUT empty on the
+       node's context.
+
+       Example: {'url_kwargs': 'year:'}
+
+    """
+    # url_kwargs_str should be a str in form 'kwd_1:val_1, kwd_2:val_2, ...'...
+    if not url_kwargs_str:
+        return {}
+
     url_kwargs_str = str(url_kwargs_str) # just make sure it's a string
-    url_kwargs = {}
-    if url_kwargs_str:
-        for pair in url_kwargs_str.split(','):
-            k, v = pair.strip().split(':')
-            k = k.strip()
-            v = v.strip()
-            # Empty values are allowed here to provide a way to set them through
-            # the current URL
-            if k:
-                url_kwargs[k] = v
-    return url_kwargs
+
+    kwargs = {}
+    for pair in url_kwargs_str.split(','):
+        k, v = pair.strip().split(':')
+        k = k.strip()
+        v = v.strip()
+        if k:
+            if v:
+                kwargs[k] = v
+            else:
+                # if the value is empty, try to get it from the current URL's
+                # path
+                if url_match:
+                    v = url_match.kwargs.get(k, None)
+                    if v:
+                        kwargs[k] = v
+    return kwargs
 
 
 def reverse_url(n, url_match):
-    # Any needed url parameters can be defined through these ways:
-    #
-    # 1. Through the url_kwargs passed with the node's context.
-    #    Example: {'url_kwargs': 'slug:some_category'}
-    #
-    # 2. Through the url path of the request. This is the case, when the
-    #    url should be built depending on the current url. Example:
-    #    We've got an url archive/<year>/ and subsets for news, articles, etc.
-    #    Like this: archive/<year>/news, archive/<year>/articles ... And we
-    #    want <year> to be set depending the current url.
-    #    For this to work, the keyword should be present BUT empty on the
-    #    node's context.
-    #    Example: {'url_kwargs': 'year:'}
-
     # Get any passed kwargs from the node's context
-    url_kwargs = n.context.get('url_kwargs', '')
-    kwargs_dict = {}
-    if url_kwargs:
-        kwargs_dict = get_url_kwargs(url_kwargs)
+    kwargs_dict = get_url_kwargs(n.context.get('url_kwargs', ''), url_match)
 
-    # Now check for any empty arguments and try to get them from the current
-    # URL's path
-    for k in kwargs_dict.keys():
-        if not kwargs_dict[k]:
-            if url_match:
-                v = url_match.kwargs.get(k, None)
-                if v:
-                    kwargs_dict[k] = v
-                else:
-                    # if couldn't get the argument, delete it
-                    del kwargs_dict[k]
     try:
         url = reverse(n.url_name, kwargs=kwargs_dict)
     except NoReverseMatch:
