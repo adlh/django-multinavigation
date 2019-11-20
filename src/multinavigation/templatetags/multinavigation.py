@@ -9,8 +9,8 @@ from django.conf import settings
 from django import template
 from django.template import RequestContext
 from collections import namedtuple
-from django.core.urlresolvers import reverse, resolve, Resolver404
-from django.core.urlresolvers import NoReverseMatch
+from django.urls import reverse, resolve, Resolver404
+from django.urls import NoReverseMatch
 from pprint import pformat
 import logging
 

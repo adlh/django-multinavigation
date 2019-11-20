@@ -1,10 +1,12 @@
+======================
 django-multinavigation
 ======================
 
 Goal: A simple, flexible and DRY way to define and create navigations
 (tabnavigation and breadcrumbs).
 
-INSTALLATION:
+Quick start
+-----------
 
 1) Add app to settings.py:
 ```python
