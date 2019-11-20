@@ -4,6 +4,7 @@ setup(
     name='django-multinavigation',
     version='1.0',
     description='A Django app to easily generate navigation and breadcrumbs',
+    long_description='A simple, flexible and DRY way to define and create navigations (tabnavigation and breadcrumbs) from the urlpatterns and a context-processor.',
     url='https://github.com/adlh/django-multinavigation',
     license='MIT',
     author='Andrea de la Huerta',
