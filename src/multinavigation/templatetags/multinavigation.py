@@ -119,9 +119,14 @@ def match_node(url_name, kwargs, node, url_match):
     """ Returns true if a node matches url_name and kwargs (if any given) """
     if node.url_name != url_name:
         return False
-    if not kwargs:
-        return True
+
+
+    # Check if the kwargs set on the node match the ones from the request
+    # TODO: or should we only check for nkwargs here?
+    # TODO write tests!!!
     nkwargs = get_url_kwargs(node.context.get('url_kwargs', ''), url_match)
+    if not kwargs or not nkwargs:
+        return True
 
     return match_subset_kwargs(kwargs, nkwargs)
 
