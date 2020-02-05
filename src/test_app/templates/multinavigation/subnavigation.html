@@ -1,0 +1,3 @@
+<subnavigation>{% for node in nodes %}
+- [{{node.label}}] [{{node.url}}] [{% if node.active %}active{% endif %}] [{{node.context.css_class}}]{% endfor %}
+</subnavigation>

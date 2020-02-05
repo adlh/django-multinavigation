@@ -1,0 +1,6 @@
+- {{node.label}} [+]{% if node.active %} [active]{% endif %}
+<dropdown>
+{% for child in node.children %}{% with child as item %}
+{% include "multinavigation/_tabnav_item.html" %}
+{% endwith %}{% endfor %}
+</dropdown>

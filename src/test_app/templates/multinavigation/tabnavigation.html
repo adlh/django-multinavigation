@@ -1,0 +1,3 @@
+<tabnavigation>{% for node in nodes %}
+{% if node.children %}{% include "multinavigation/_tabnav_item_dropdown.html" %}{% else %}{% with node as item %}{% include "multinavigation/_tabnav_item.html" %}{% endwith %}{% endif %}{% endfor %}
+</tabnavigation>

@@ -1,0 +1,10 @@
+{% load multinavigation %}
+<body>
+{% tabnavigation request MULTINAV_NODES %}
+{% flatnavigation request MULTINAV_NODES %}
+{% subnavigation request MULTINAV_NODES %}
+{% breadcrumbs request MULTINAV_NODES %}
+<div id="content">
+    {% block content %}{% endblock content %}
+</div>
+</body>

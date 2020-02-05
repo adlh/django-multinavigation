@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='django-multinavigation',
-    version='1.1',
+    version='1.2',
     description='A Django app to easily generate navigation and breadcrumbs',
     long_description='A simple, flexible and DRY way to define and create navigations (tabnavigation and breadcrumbs) from the urlpatterns and a context-processor.',
     long_description_content_type='text/x-rst',

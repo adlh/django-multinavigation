@@ -2,16 +2,16 @@
 #
 # Templates are needed in order render the navigations:
 #
-# <template_folder>/multinavigation/tabnavigation.html
 # <template_folder>/multinavigation/breadcrumbs.html
+# <template_folder>/multinavigation/flatnavigation.html
+# <template_folder>/multinavigation/subnavigation.html
+# <template_folder>/multinavigation/tabnavigation.html
 
-from django.conf import settings
 from django import template
 from django.template import RequestContext
 from collections import namedtuple
 from django.urls import reverse, resolve, Resolver404
 from django.urls import NoReverseMatch
-from pprint import pformat
 import logging
 
 logger = logging.getLogger(__name__)
@@ -93,6 +93,7 @@ def get_root(n, nodes, url_match):
     else:
         return get_root(parent, nodes, url_match)
 
+
 def find_parent(child, nodes, url_match):
     if not child.parent:
         return None
@@ -101,7 +102,6 @@ def find_parent(child, nodes, url_match):
         if match_node(url_name, kwargs, node, url_match):
             return node
     return None
-
 
 
 def get_url_match(request):
@@ -115,11 +115,12 @@ def get_url_match(request):
         return None
 
 
+# TODO: make it work with only node context or url|<kwargs>, or a combination
+#   of both, without having to repeat same kwargs on url|<kwargs> and {'url_kwargs'...}
 def match_node(url_name, kwargs, node, url_match):
     """ Returns true if a node matches url_name and kwargs (if any given) """
     if node.url_name != url_name:
         return False
-
 
     # Check if the kwargs set on the node match the ones from the request
     # TODO: or should we only check for nkwargs here?
@@ -270,7 +271,7 @@ def reverse_url(n, url_match):
 def is_active(request, link_url):
     """ check if the corresponding parts of the given link and the request.path
     match (active).
-    For example, if requeest.path is '/bla/bli/blu/' and link_url is '/bla/',
+    For example, if request.path is '/bla/bli/blu/' and link_url is '/bla/',
     '/bla/bli' or /bla/bli/blu/', then is_active should return True
     """
     if not hasattr(request, 'path'):
@@ -279,6 +280,8 @@ def is_active(request, link_url):
     request_parts = (request.path).strip('/').split('/')
     if len(request_parts) < len(link_parts):
         return False
-    return '/'.join(link_parts) == '/'.join(request_parts[0:len(link_parts)])
+    link_comp = '/'.join(link_parts)
+    req_comp = '/'.join(request_parts[0:len(link_parts)])
+    return link_comp == req_comp
 
 
