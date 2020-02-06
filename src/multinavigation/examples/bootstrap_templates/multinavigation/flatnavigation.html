@@ -1,0 +1,21 @@
+{% comment %}
+Available fields:
+=================
+nodes - a list of multinavigation.conf.Node
+each node has:
+- url_name (string),
+- label (string),
+- parent (string) and
+- context - a dictionary where extra context can be defined to be used in templates.
+            e.g. {{ node.context.css_class }}
+
+=================
+{% endcomment %}
+{% for node in nodes %}
+    <li class="nav-item">
+        <a class="nav-link {% if node.active %}active{% endif %}" href="{{ node.url }}">
+            {{ node.label }}
+        </a>
+    </li>
+{% endfor %}
+
