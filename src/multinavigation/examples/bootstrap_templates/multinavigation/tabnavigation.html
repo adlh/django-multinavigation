@@ -1,0 +1,42 @@
+{% comment %}
+Available fields:
+=================
+nodes - a list of multinavigation.conf.Node
+each node has:
+- url_name (string),
+- label (string),
+- parent (string) and
+- context - a dictionary where extra context can be defined to be used in templates.
+            e.g. {{ node.context.css_class }}
+
+=================
+{% endcomment %}
+<!--
+only showing 2 nested levels, for rendering all nested nodes, take a look
+at the tabnavigation.html on the simple_templates
+ -->
+{% for node in nodes %}
+    {% if node.children %}
+        <li class="nav-item dropdown {% if node.active %}active{% endif %}">
+            <a class="nav-link dropdown-toggle"
+               data-toggle="dropdown" href="#" role="button"
+               aria-haspopup="true" aria-expanded="false">{{ node.label }}</a>
+            <ul class="dropdown-menu">
+                {% for cnode in node.children %}
+                <a class="dropdown-item {% if cnode.active %}active{% endif %}"
+                   href="{{ cnode.url }}">
+                    <i class="{{ cnode.context.class }}"></i>
+                    {{ cnode.label }}
+                </a>
+                {% endfor %}
+            </ul>
+        </li>
+    {% else %}
+        <li class="nav-item">
+            <a class="nav-link {% if node.active %}active{% endif %}" href="{{ node.url }}">
+                {{ node.label }}
+            </a>
+        </li>
+    {% endif %}
+{% endfor %}
+
