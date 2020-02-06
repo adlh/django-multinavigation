@@ -1,0 +1,26 @@
+{% comment %}
+Available fields:
+=================
+nodes - a list of multinavigation.conf.Node
+each node has:
+- url_name (string),
+- label (string),
+- parent (string) and
+- context - a dictionary where extra context can be defined to be used in templates.
+            e.g. {{ node.context.css_class }}
+
+=================
+{% endcomment %}
+<!--
+Only showing top-most level (without root-nodes), for rendering all nested nodes, take a look
+at the tabnavigation.html on the simple_templates
+ -->
+{% for node in nodes %}
+    <li class="nav-item">
+        <a href="{{ node.url }}" class="nav-link {% if node.active %}active{% endif %}">
+            <i class="{{ node.context.class }}"></i>
+            {{ node.label }}
+        </a>
+    </li>
+{% endfor %}
+
