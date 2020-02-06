@@ -1,0 +1,24 @@
+{% comment %}
+Available fields:
+=================
+nodes - a list of multinavigation.conf.Node
+each node has:
+- url_name (string),
+- label (string),
+- parent (string) and
+- context - a dictionary where extra context can be defined to be used in templates.
+            e.g. {{ node.context.css_class }}
+
+=================
+{% endcomment %}
+{% if nodes|length > 1 %}
+<ol class="breadcrumb">
+{% for n in nodes %}
+    {% if forloop.last %}
+        <li class="breadcrumb-item active" aria-current="page">{{ n.label }}</li>
+    {% else %}
+        <li class="breadcrumb-item"><a href="{{ n.url }}">{{ n.label }}</a></li>
+    {% endif %}
+{% endfor %}
+</ol>
+{% endif %}
