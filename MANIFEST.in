@@ -1,5 +1,9 @@
 include LICENSE
 include README.md
 include LICENSE.txt
-recursive-include multinavigation/examples *
-recursive-include multinavigation/templatetags *
+include pytest.ini
+include requirements.txt
+include runtests.py
+recursive-include src/multinavigation/examples *
+recursive-include src/multinavigation/templatetags *
+recursive-include src/test_app *
