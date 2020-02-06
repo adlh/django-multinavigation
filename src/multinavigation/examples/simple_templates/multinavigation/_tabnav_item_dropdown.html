@@ -1,0 +1,10 @@
+<li>
+    <a href="{{ node.url }}" class="{% if node.active %} [active]{% endif %}">
+        {{node.label}}
+    </a>
+    <ul class="dropdown">
+        {% with node.children as nodes %}
+            {% include "multinavigation/_tabnav_nodes.html" %}
+        {% endwith %}
+    </ul>
+</li>

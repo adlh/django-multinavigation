@@ -1,0 +1,12 @@
+<!-- only show breadcrumbs if not on the top level -->
+{% if nodes|length > 1 %}
+<div class="breadcrumbs">
+    {% for n in nodes %}
+        {% if forloop.last %}
+            <span class="{{node.context.css_class}}">{{n.label}}</span>
+        {% else %}
+            <a href="{{ n.url }}" class="{{node.context.css_class}}">{{n.label}}</a>
+        {% endif %}
+    {% endfor %}
+</div>
+{% endif %}

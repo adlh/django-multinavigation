@@ -1,0 +1,11 @@
+<ul id="flatnavigation">
+    {% for node in nodes %}
+        <li>
+            <a href="{{node.url}}"
+               class="{% if node.active %}active{% endif %} {{node.context.css_class}}"
+            >
+                {{node.label}}
+            </a>
+        </li>
+    {% endfor %}
+</ul>

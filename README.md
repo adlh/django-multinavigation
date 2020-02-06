@@ -40,7 +40,7 @@ must be nested.
                     used on the templates (if needed) for customization purposes.
     """
     ```
-    Example:
+    #####  Simple example:
 
     ```python
     # urls.py
@@ -51,9 +51,8 @@ must be nested.
         url(r'^media/news$', 'company_news', name='news'),
         url(r'^media/videos$', 'company_videos', name='videos'),
         url(r'^contact/$', 'contact_view', name='contact'),
-   ]
-   
-   
+    
+    
     # context_processors.py
     from multinavigation.conf import Node
 
@@ -69,7 +68,8 @@ must be nested.
                 ]
             }
     ```
-
+    #####  More complex routes (with kwargs)
+    
     If there are routes using named parameters, then you can specify the expected kwargs 
     from the request in the node's context `{'url_kwargs': ...}`. 
 
@@ -88,6 +88,7 @@ must be nested.
         url(r'^animals/(?P<category>[a-z]+)/(?P<name>[a-z]+)/$', 'pet_view', name='pet'),
         url(r'^contact/$', 'contact_view', name='contact'),
     ]
+    
    
     # context_processors.py
     from multinavigation.conf import Node
@@ -104,17 +105,41 @@ must be nested.
                 Node('animals_category', 'Birds', 'animals', {'url_kwargs': 'category:birds'}),
                 Node('animals_category', 'Monkeys', 'animals', {'url_kwargs': 'category:monkeys'}),
                 Node('contact', 'Contact', '', {}),
-                # when refering to a parent with kwargs, define them after the url_name:
-                # '<url_name>|kwarg1:val1,kwarg2:val2...'
-                Node('pet', 'Dog', 'animals_category|category:dogs', {'url_kwargs': 'category:dogs,name:'}),
-                # ... also, when dealing with kwargs that are dynamically set and have no dedicated route 
-                # (like here the route 'pets' for 'Cat', 'Bird', etc.) you can leave the value empty 
-                # (e.g. 'name:') and it will be defined through the request kwargs, if present.
-                Node('pet', 'Cat', 'animals_category|category:cats', {'url_kwargs': 'category:cats,name:'}),
-                Node('pet', 'Bird', 'animals_category|category:birds', {'url_kwargs': 'category:birds,name:'}),
-                Node('pet', 'Monkey', 'animals_category|category:monkeys', {'url_kwargs': 'category:monkeys,name:'}),
             ]
        }
+    ```
+    #####  Dynamically setting parameters from the routes:
+    
+    Sometimes it's necessary to 'fill' kwargs which are dynamically set
+    on runtime. In this case, we can set a placeholder that will be
+    autocompleted from the request's kwargs, if all other parameters match
+    and the paramter is present on the kwargs.
+    
+    Example:
+     
+    Let's say we have an archive with news and pics as subnav items. Now
+    depending if we're on `/archive/2014/` we want the subnav items set to
+    `/archive/2014/news/` and `/archive/2014/pics/` respectively.
+
+    ```python
+    # urls.py
+    ...
+        url(r'^archive/(?P<year>[0-9]{4})/$', 'archive', name='archive_year'),
+        url(r'^archive/(?P<year>[0-9]{4})/news$', 'archive_news', name='archive_news'),
+        url(r'^archive/(?P<year>[0-9]{4})/pics$', 'archive_pics', name='archive_pics'),
+    ...
+
+   
+    # context_processors.py
+    from multinavigation.conf import Node
+
+    # We define the nodes in the subnav like this:
+
+    def multinavigation(request):
+    #...
+        Node('archive_news', _('News'), 'archive', {'url_kwargs': 'year:'}),
+        Node('archive_pics', _('Pictures'), 'archive', {'url_kwargs': 'year:'}),
+    #...
     ```
 
 4) Add your context_processor in settings.py, e.g.

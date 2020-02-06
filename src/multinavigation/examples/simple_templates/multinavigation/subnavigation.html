@@ -1,0 +1,16 @@
+<ul id="subnavigation">
+<!--
+Even though, the subnavigation might contain nested items, in this example we
+only output the top-most level, for a nested example, check the
+tabnavigation.html example.
+-->
+    {% for node in nodes %}
+        <li>
+            <a href="{{node.url}}"
+               class="{% if node.active %}active{% endif %} {{node.context.css_class}}"
+            >
+                {{node.label}}
+            </a>
+        </li>
+    {% endfor %}
+</ul>
