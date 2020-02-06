@@ -17,6 +17,8 @@ import logging
 logger = logging.getLogger(__name__)
 register = template.Library()
 
+DEBUG_CATCH_NEXT = False
+
 """ A tree node represents each item on a tree-navigation """
 TNode = namedtuple('TNode', 'url label active children context')
 def build_tnode(n, children, url, active):
@@ -29,6 +31,8 @@ def build_tnode(n, children, url, active):
 def tabnavigation(context, request, nodes):
     """ Returns nodes for the complete navigation tree. """
     url_match = get_url_match(request)
+    if not url_match or not url_match.url_name:
+        return RequestContext(request, {'nodes': [], 'context': context})
     parents = [n for n in nodes if not n.parent]
     tree_nodes = add_nodes(parents, nodes, request, url_match)
     context['nodes'] = tree_nodes
@@ -42,6 +46,8 @@ def flatnavigation(context, request, nodes):
     with the subnavigation. """
     tree_nodes = []
     url_match = get_url_match(request)
+    if not url_match or not url_match.url_name:
+        return RequestContext(request, {'nodes': [], 'context': context})
     for n in nodes:
         if not n.parent:
             url = reverse_url(n, url_match)
@@ -54,19 +60,18 @@ def flatnavigation(context, request, nodes):
 def subnavigation(context, request, nodes):
     """ Returns only a submenu (tree), if any, for the current parent. """
     url_match = get_url_match(request)
-    url_name = url_match.url_name if url_match else ''
-    kwargs = url_match.kwargs
-    if not url_name:
-        return []
-    subnodes = []
-    children = []
-    for n in nodes:
-        if match_node(url_name, kwargs, n, url_match):
-            # this is the active node, get top-most parent first
-            parent = get_root(n, nodes, url_match)
-            children = get_children(parent, nodes, url_match)
-    tree_nodes = add_nodes(children, nodes, request, url_match)
-    return RequestContext(request, {'nodes': tree_nodes, 'context': context})
+    if not url_match or not url_match.url_name:
+        return RequestContext(request, {'nodes': [], 'context': context})
+
+    # Find an active parent
+    parents = [n for n in nodes if not n.parent]
+    tree_nodes = add_nodes(parents, nodes, request, url_match)
+    active_parent = [n for n in tree_nodes if n.active]
+    if not active_parent:
+        return RequestContext(request, {'nodes': [], 'context': context})
+
+    children = active_parent[0].children
+    return RequestContext(request, {'nodes': children, 'context': context})
 
 
 @register.inclusion_tag('multinavigation/breadcrumbs.html', takes_context=True)
@@ -74,13 +79,25 @@ def breadcrumbs(context, request, nodes):
     """ Returns the bredcrumbs nodes """
     url_match = get_url_match(request)
     if not url_match or not url_match.url_name:
-        return []
-    b_nodes = []
-    # if any breadcrumbs are found the first one is the active one
-    find_breadcrumbs(None, nodes, b_nodes, True, url_match)
-    # now reverse to get parent > child > grandchild > ...
-    b_nodes.reverse()
-    return RequestContext(request, {'nodes': b_nodes, 'context': context })
+        return RequestContext(request, {'nodes': [], 'context': context})
+    # Find an active parent
+    parents = [n for n in nodes if not n.parent]
+    tree_nodes = add_nodes(parents, nodes, request, url_match)
+    active_parent = [n for n in tree_nodes if n.active]
+    if not active_parent:
+        return RequestContext(request, {'nodes': [], 'context': context})
+    active_parent = active_parent[0]
+
+    # To build the breadcrumbs, we walk all the tree following the active node
+    def get_breadcrumbs(node):
+        if node.active:
+            yield node
+        for n in node.children:
+            yield from get_breadcrumbs(n)
+
+    b_nodes = [it for it in get_breadcrumbs(active_parent)]
+
+    return RequestContext(request, {'nodes': b_nodes, 'context': context})
 
 
 def get_root(n, nodes, url_match):
@@ -122,51 +139,29 @@ def match_node(url_name, kwargs, node, url_match):
     if node.url_name != url_name:
         return False
 
+    DEBUG_CATCH_NEXT = False
+    if (len(kwargs) == 2 and kwargs['category'] == 'monkeys' and kwargs['name'] == 'bobo'
+            and node.label == 'Dog'):
+        DEBUG_CATCH_NEXT = True
     # Check if the kwargs set on the node match the ones from the request
-    # TODO: or should we only check for nkwargs here?
-    # TODO write tests!!!
+    if DEBUG_CATCH_NEXT:
+        test = 123
     nkwargs = get_url_kwargs(node.context.get('url_kwargs', ''), url_match)
-    if not kwargs or not nkwargs:
+    if not kwargs and not nkwargs:
         return True
 
     return match_subset_kwargs(kwargs, nkwargs)
 
 
-def find_breadcrumbs(url_name_args, nodes, b_nodes, active, url_match):
-    """
-    Find a node matching url_name and any kwargs specified by the url_name_args
-    or if none given from the url_match (our starting point).
-    If a node is found add it to b_nodes and if the node has a parent repeat
-    the procedure.
-
-    """
-    kwargs = {}
-    url_name = ''
-    if not url_name_args:
-        kwargs = url_match.kwargs
-        url_name = url_match.url_name
-    else:
-        url_name, kwargs = parse_url_name_args(url_name_args)
-
-    found = [n for n in nodes if match_node(url_name, kwargs, n, url_match)]
-    if found:
-        found = found[0]
-    if not found:
-        return
-
-    url = reverse_url(found, url_match)
-    b_nodes.append(build_tnode(found, [], url, active))
-
-    if found.parent:
-        find_breadcrumbs(found.parent, nodes, b_nodes, False, url_match)
-
-
 def match_subset_kwargs(subset_kwargs, kwargs):
     """ Check that all key-value pairs in subset_kwargs match on kwargs """
     # Use sets to easily compare both dicts
+    if DEBUG_CATCH_NEXT:
+        test = 1234
     s1 = set(kwargs.items())
     s2 = set(subset_kwargs.items())
-    return s2.issubset(s1)
+    is_subset = s2.issubset(s1)
+    return is_subset
 
 
 def parse_url_name_args(string):
@@ -207,10 +202,15 @@ def add_nodes(parents, nodes, request, url_match):
         # children nodes can specify a parent by url_name and additionally
         # with kwargs like this: 'the_url_name|kwd_1:val1,kwd_2:val2'
         children = get_children(n, nodes, url_match)
-        tn_children = add_nodes(children, nodes, request, url_match)
+        tn_children = []
+        if children:
+            tn_children = add_nodes(children, nodes, request, url_match)
         url = reverse_url(n, url_match)
         active = is_active(request, url)
-        tn_list.append(build_tnode(n, tn_children, url, active))
+        # Only add the node if it also has a valid URL, else it wouldn't make
+        # sense to add it in the menu
+        if url:
+            tn_list.append(build_tnode(n, tn_children, url, active))
     return tn_list
 
 
@@ -240,6 +240,8 @@ def get_url_kwargs(url_kwargs_str, url_match):
     url_kwargs_str = str(url_kwargs_str) # just make sure it's a string
 
     kwargs = {}
+    # put all autocompleted kwargs here
+    autocompleted = {}
     for pair in url_kwargs_str.split(','):
         k, v = pair.strip().split(':')
         k = k.strip()
@@ -253,7 +255,12 @@ def get_url_kwargs(url_kwargs_str, url_match):
                 if url_match:
                     v = url_match.kwargs.get(k, None)
                     if v:
-                        kwargs[k] = v
+                        autocompleted[k] = v
+    # all kwargs completed from the URL should only be applied,
+    # if the others match
+    if autocompleted and match_subset_kwargs(kwargs, url_match.kwargs):
+        kwargs.update(autocompleted)
+
     return kwargs
 
 
@@ -264,7 +271,7 @@ def reverse_url(n, url_match):
     try:
         url = reverse(n.url_name, kwargs=kwargs_dict)
     except NoReverseMatch:
-        url = '#'
+        url = ''
     return url
 
 
