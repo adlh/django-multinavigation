@@ -71,7 +71,7 @@ must be nested.
     ```
 
     If there are routes using named parameters, then you can specify the expected kwargs 
-    from the request in the node's context ({'url_kwargs': ...}). 
+    from the request in the node's context `{'url_kwargs': ...}`. 
 
     Also, if using kwargs on nodes with children, then the children can specify their parent url
     with url parameters which must be matched on the parent by the format:
@@ -140,15 +140,43 @@ must be nested.
 5) Define your template(s), you can also just use or customize the
 example-templates provided.
 
-6) Ready to use the templatetags. Some examples could be:
+6) You're ready to render the templatetags!
+    
+    If we take the `urlpatterns` and `MULTINAV_NODES` from our first example
+    above, and the active URL is `/media/videos/`, the rendered
+    templatetags (depending on the templates you define) could look something
+    like this:
+    
     ```html
-    <div class="navbar">
-        <ul class="nav nav-pills">
-            {% tabnavigation request MULTINAV_NODES %}
-        </ul>
-    </div>
-
-    <ul class="breadcrumb">
-        {% breadcrumbs request MULTINAV_NODES %}
+    {% load multinavigation %}
+   
+    {% tabnavigation request MULTINAV_NODES %}
+    <ul>
+       <li>Home</li> 
+       <li>Company</li> 
+       <li class="active">Media
+           <ul>
+               <li>News</li> 
+               <li class="active">Videos</li> 
+           </ul>
+       </li> 
+       <li>Contact</li>
     </ul>
+   
+    {% flatnavigation request MULTINAV_NODES %}
+    <ul>
+       <li>Home</li> 
+       <li>Company</li> 
+       <li class="active">Media</li> 
+       <li>Contact</li>
+    </ul>
+    
+    {% subnavigation request MULTINAV_NODES %}
+    <ul>
+        <li>News</li> 
+        <li class="active">Videos</li> 
+    </ul>
+    
+    {% breadcrumbs request MULTINAV_NODES %}
+    <div>Media / Videos</div>
     ```
