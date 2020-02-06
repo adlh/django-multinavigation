@@ -9,8 +9,8 @@ INSTALLED_APPS = (
      'django.contrib.auth',
      'django.contrib.contenttypes',
      'django.contrib.sessions',
-     'multinavigation',
-     'test_app'
+     'src.multinavigation',
+     'src.test_app'
 )
 
 MIDDLEWARE = (
@@ -32,7 +32,7 @@ TEMPLATES = [
                 'django.template.context_processors.debug',
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.request',
-                'test_app.context_processors.multinavigation'
+                'src.test_app.context_processors.multinavigation'
             ],
         },
     },
@@ -40,11 +40,11 @@ TEMPLATES = [
 
 # Load models directly to pick up test-only models
 # See: http://stackoverflow.com/a/25267435/347942
-MIGRATION_MODULES = {'multinavigation': None}
+MIGRATION_MODULES = {'src.multinavigation': None}
 
 SECRET_KEY = 'this-is-just-for-tests-so-not-that-secret'
 
-ROOT_URLCONF = 'test_app.urls'
+ROOT_URLCONF = 'src.test_app.urls'
 
 LOGGING = {
     'version': 1,

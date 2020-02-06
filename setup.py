@@ -35,4 +35,5 @@ setup(
         'Bug Reports': 'https://github.com/adlh/django-multinavigation',
         'Source': 'https://github.com/adlh/django-multinavigation',
     },
+    setup_requires=['pytest-runner']
 )
